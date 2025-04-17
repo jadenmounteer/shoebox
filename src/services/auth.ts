@@ -10,38 +10,79 @@ import { auth } from "./firebase";
 
 export async function signUp(email: string, password: string): Promise<User> {
   try {
+    console.log("Attempting to sign up with email:", email);
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
+    console.log("Sign up successful:", userCredential);
     return userCredential.user;
-  } catch (error) {
-    const authError = error as AuthError;
-    throw new Error(authError.message || "Failed to create account");
+  } catch (error: unknown) {
+    // Log the full error object for debugging
+    console.error("Sign up error:", error);
+
+    if (error && typeof error === "object" && "code" in error) {
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case "auth/email-already-in-use":
+          throw new Error("This email is already registered");
+        case "auth/invalid-email":
+          throw new Error("Invalid email address");
+        case "auth/operation-not-allowed":
+          throw new Error(
+            "Email/password accounts are not enabled. Please contact support."
+          );
+        case "auth/weak-password":
+          throw new Error("Password is too weak");
+        default:
+          throw new Error(`Authentication error: ${error.code}`);
+      }
+    }
+
+    throw new Error("Failed to create account");
   }
 }
 
 export async function login(email: string, password: string): Promise<User> {
   try {
+    console.log("Attempting to log in with email:", email);
     const userCredential = await signInWithEmailAndPassword(
       auth,
       email,
       password
     );
+    console.log("Login successful:", userCredential);
     return userCredential.user;
-  } catch (error) {
-    const authError = error as AuthError;
-    throw new Error(authError.message || "Failed to sign in");
+  } catch (error: unknown) {
+    console.error("Login error:", error);
+
+    if (error && typeof error === "object" && "code" in error) {
+      switch (error.code) {
+        case "auth/invalid-email":
+          throw new Error("Invalid email address");
+        case "auth/user-disabled":
+          throw new Error("This account has been disabled");
+        case "auth/user-not-found":
+          throw new Error("No account found with this email");
+        case "auth/wrong-password":
+          throw new Error("Incorrect password");
+        default:
+          throw new Error(`Authentication error: ${error.code}`);
+      }
+    }
+
+    throw new Error("Failed to sign in");
   }
 }
 
 export async function logout(): Promise<void> {
   try {
     await signOut(auth);
-  } catch (error) {
-    const authError = error as AuthError;
-    throw new Error(authError.message || "Failed to sign out");
+    console.log("Logout successful");
+  } catch (error: unknown) {
+    console.error("Logout error:", error);
+    throw new Error("Failed to sign out");
   }
 }
 
