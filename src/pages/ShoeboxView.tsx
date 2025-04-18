@@ -22,6 +22,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Shoebox, getUserShoeboxes } from "../services/shoeboxService";
 import { Image, getShoeboxImages, deleteImage } from "../services/imageService";
 import ImageUpload from "../components/ImageUpload";
+import ImageViewer from "../components/ImageViewer";
 
 const ShoeboxView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,7 @@ const ShoeboxView: React.FC = () => {
   const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadShoebox();
@@ -73,6 +75,10 @@ const ShoeboxView: React.FC = () => {
     } catch (err) {
       console.error("Failed to delete image:", err);
     }
+  };
+
+  const handleImageClick = (imageUrl: string) => {
+    setSelectedImage(imageUrl);
   };
 
   if (loading) {
@@ -128,7 +134,18 @@ const ShoeboxView: React.FC = () => {
       {images.length > 0 ? (
         <ImageList cols={3} gap={8}>
           {images.map((image) => (
-            <ImageListItem key={image.id}>
+            <ImageListItem
+              key={image.id}
+              onClick={() => handleImageClick(image.url)}
+              sx={{
+                cursor: "pointer",
+                "&:hover": {
+                  opacity: 0.9,
+                  transform: "scale(1.02)",
+                  transition: "all 0.2s ease-in-out",
+                },
+              }}
+            >
               <img
                 src={image.url}
                 alt={`Uploaded at ${image.uploadedAt.toLocaleString()}`}
@@ -139,7 +156,10 @@ const ShoeboxView: React.FC = () => {
                 actionIcon={
                   <MuiIconButton
                     sx={{ color: "rgba(255, 255, 255, 0.54)" }}
-                    onClick={() => handleDeleteImage(image)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent opening the viewer when clicking delete
+                      handleDeleteImage(image);
+                    }}
                   >
                     <DeleteIcon />
                   </MuiIconButton>
@@ -155,6 +175,12 @@ const ShoeboxView: React.FC = () => {
           </Typography>
         </Paper>
       )}
+
+      <ImageViewer
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        imageUrl={selectedImage || ""}
+      />
     </Container>
   );
 };
