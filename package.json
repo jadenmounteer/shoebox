@@ -24,6 +24,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "identity-obj-proxy": "^3.0.0",
     "jest-environment-jsdom": "^29.0.0",
     "ts-jest": "^29.0.0"
@@ -33,6 +34,7 @@
     "build": "react-scripts build",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:rules": "firebase emulators:exec --only firestore 'jest -c src/tests/jest.firebase.config.js'",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
