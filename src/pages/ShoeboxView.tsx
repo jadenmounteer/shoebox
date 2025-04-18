@@ -10,20 +10,18 @@ import {
   IconButton,
   ImageList,
   ImageListItem,
+  ImageListItemBar,
+  IconButton as MuiIconButton,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
   Add as AddIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import { Shoebox, getUserShoeboxes } from "../services/shoeboxService";
+import { Image, getShoeboxImages, deleteImage } from "../services/imageService";
 import ImageUpload from "../components/ImageUpload";
-
-interface Image {
-  id: string;
-  url: string;
-  uploadedAt: Date;
-}
 
 const ShoeboxView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +50,8 @@ const ShoeboxView: React.FC = () => {
       }
 
       setShoebox(foundShoebox);
-      // TODO: Load images from Firestore
+      const shoeboxImages = await getShoeboxImages(id);
+      setImages(shoeboxImages);
     } catch (err) {
       setError("Failed to load shoebox");
       console.error(err);
@@ -61,14 +60,19 @@ const ShoeboxView: React.FC = () => {
     }
   };
 
-  const handleImageUpload = (imageUrl: string) => {
-    const newImage: Image = {
-      id: Date.now().toString(),
-      url: imageUrl,
-      uploadedAt: new Date(),
-    };
-    setImages((prev) => [...prev, newImage]);
-    // TODO: Save image reference to Firestore
+  const handleImageUpload = (image: Image) => {
+    setImages((prev) => [...prev, image]);
+  };
+
+  const handleDeleteImage = async (image: Image) => {
+    if (!id) return;
+
+    try {
+      await deleteImage(id, image.id, image.url);
+      setImages((prev) => prev.filter((img) => img.id !== image.id));
+    } catch (err) {
+      console.error("Failed to delete image:", err);
+    }
   };
 
   if (loading) {
@@ -129,6 +133,17 @@ const ShoeboxView: React.FC = () => {
                 src={image.url}
                 alt={`Uploaded at ${image.uploadedAt.toLocaleString()}`}
                 loading="lazy"
+              />
+              <ImageListItemBar
+                title={image.uploadedAt.toLocaleString()}
+                actionIcon={
+                  <MuiIconButton
+                    sx={{ color: "rgba(255, 255, 255, 0.54)" }}
+                    onClick={() => handleDeleteImage(image)}
+                  >
+                    <DeleteIcon />
+                  </MuiIconButton>
+                }
               />
             </ImageListItem>
           ))}

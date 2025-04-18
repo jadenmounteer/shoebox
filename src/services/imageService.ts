@@ -1,5 +1,19 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "../config/firebase";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  Timestamp,
+} from "firebase/firestore";
+import { storage, db } from "../config/firebase";
 
 interface ImageUploadOptions {
   userId: string;
@@ -10,6 +24,12 @@ interface ImageUploadOptions {
   quality?: number;
 }
 
+export interface Image {
+  id: string;
+  url: string;
+  uploadedAt: Date;
+}
+
 export const uploadImage = async ({
   userId,
   shoeboxId,
@@ -17,7 +37,7 @@ export const uploadImage = async ({
   maxWidth = 1200,
   maxHeight = 1200,
   quality = 0.8,
-}: ImageUploadOptions): Promise<string> => {
+}: ImageUploadOptions): Promise<Image> => {
   // Create a canvas to resize the image
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -67,5 +87,43 @@ export const uploadImage = async ({
 
   // Get the download URL
   const downloadURL = await getDownloadURL(storageRef);
-  return downloadURL;
+
+  // Store image reference in Firestore
+  const imageRef = await addDoc(
+    collection(db, `shoeboxes/${shoeboxId}/images`),
+    {
+      url: downloadURL,
+      uploadedAt: Timestamp.now(),
+    }
+  );
+
+  return {
+    id: imageRef.id,
+    url: downloadURL,
+    uploadedAt: new Date(),
+  };
+};
+
+export const getShoeboxImages = async (shoeboxId: string): Promise<Image[]> => {
+  const imagesRef = collection(db, `shoeboxes/${shoeboxId}/images`);
+  const snapshot = await getDocs(imagesRef);
+
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    url: doc.data().url,
+    uploadedAt: doc.data().uploadedAt.toDate(),
+  }));
+};
+
+export const deleteImage = async (
+  shoeboxId: string,
+  imageId: string,
+  imageUrl: string
+): Promise<void> => {
+  // Delete from Storage
+  const storageRef = ref(storage, imageUrl);
+  await deleteObject(storageRef);
+
+  // Delete from Firestore
+  await deleteDoc(doc(db, `shoeboxes/${shoeboxId}/images/${imageId}`));
 };

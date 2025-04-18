@@ -7,12 +7,12 @@ import {
   Alert,
 } from "@mui/material";
 import { CloudUpload as CloudUploadIcon } from "@mui/icons-material";
-import { uploadImage } from "../services/imageService";
+import { uploadImage, Image } from "../services/imageService";
 import { useAuth } from "../contexts/AuthContext";
 
 interface ImageUploadProps {
   shoeboxId: string;
-  onUploadComplete: (imageUrl: string) => void;
+  onUploadComplete: (image: Image) => void;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -45,12 +45,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setError(null);
 
     try {
-      const imageUrl = await uploadImage({
+      const image = await uploadImage({
         userId: user.uid,
         shoeboxId,
         file,
       });
-      onUploadComplete(imageUrl);
+      onUploadComplete(image);
     } catch (err) {
       setError("Failed to upload image. Please try again.");
       console.error(err);
