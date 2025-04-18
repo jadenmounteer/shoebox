@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
+import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./contexts/AuthContext";
 
 const App: React.FC = () => {
@@ -36,7 +37,7 @@ const App: React.FC = () => {
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
-                    <div>Dashboard (coming soon)</div>
+                    <Dashboard />
                   </ProtectedRoute>
                 }
               />
