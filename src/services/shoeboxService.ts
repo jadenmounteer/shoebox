@@ -9,7 +9,9 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { ref, deleteObject } from "firebase/storage";
+import { db, storage } from "../config/firebase";
+import { getShoeboxImages, deleteImage } from "./imageService";
 
 export interface Shoebox {
   id: string;
@@ -54,6 +56,15 @@ export const updateShoebox = async (
 };
 
 export const deleteShoebox = async (shoeboxId: string): Promise<void> => {
+  // First, get all images in the shoebox
+  const images = await getShoeboxImages(shoeboxId);
+
+  // Delete each image (this will handle both Storage and Firestore cleanup)
+  for (const image of images) {
+    await deleteImage(shoeboxId, image.id, image.url);
+  }
+
+  // Finally, delete the shoebox document
   const shoeboxRef = doc(db, "shoeboxes", shoeboxId);
   await deleteDoc(shoeboxRef);
 };
