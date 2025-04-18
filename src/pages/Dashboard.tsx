@@ -25,6 +25,7 @@ import {
   deleteShoebox,
   getUserShoeboxes,
 } from "../services/shoeboxService";
+import { getUserData } from "../services/auth";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
@@ -33,6 +34,7 @@ const Dashboard: React.FC = () => {
   const [shoeboxes, setShoeboxes] = useState<Shoebox[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -42,7 +44,21 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadShoeboxes();
+    loadUserData();
   }, [user]);
+
+  const loadUserData = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const userData = await getUserData(user.uid);
+      if (userData) {
+        setUsername(userData.username);
+      }
+    } catch (err) {
+      console.error("Failed to load user data:", err);
+    }
+  };
 
   const loadShoeboxes = async () => {
     if (!user?.uid) return;
@@ -147,7 +163,7 @@ const Dashboard: React.FC = () => {
       {/* User Welcome Card */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Welcome back, {user?.email}!
+          Welcome back, {username || "User"}!
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Start creating and organizing your digital memories.
