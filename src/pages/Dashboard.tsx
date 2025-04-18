@@ -1,48 +1,126 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
   Typography,
-  Grid,
   Paper,
   Button,
   Card,
   CardContent,
   CardActions,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
-
-interface ShoeboxProps {
-  id: string;
-  name: string;
-  description: string;
-  imageCount: number;
-}
+import ShoeboxDialog from "../components/ShoeboxDialog";
+import {
+  Shoebox,
+  createShoebox,
+  updateShoebox,
+  deleteShoebox,
+  getUserShoeboxes,
+} from "../services/shoeboxService";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [shoeboxes, setShoeboxes] = useState<Shoebox[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Placeholder data - will be replaced with actual data from Firebase
-  const mockShoeboxes: ShoeboxProps[] = [
-    {
-      id: "1",
-      name: "Family Vacation 2023",
-      description: "Summer trip to the beach",
-      imageCount: 24,
-    },
-    {
-      id: "2",
-      name: "Birthday Party",
-      description: "My 25th birthday celebration",
-      imageCount: 15,
-    },
-  ];
+  // Dialog states
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedShoebox, setSelectedShoebox] = useState<Shoebox | null>(null);
 
-  const handleCreateShoebox = () => {
-    // TODO: Implement shoebox creation
-    console.log("Create new shoebox");
+  useEffect(() => {
+    loadShoeboxes();
+  }, [user]);
+
+  const loadShoeboxes = async () => {
+    if (!user?.uid) return;
+
+    try {
+      setLoading(true);
+      const userShoeboxes = await getUserShoeboxes(user.uid);
+      setShoeboxes(userShoeboxes);
+    } catch (err) {
+      setError("Failed to load shoeboxes");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleCreateShoebox = async (data: {
+    name: string;
+    description: string;
+  }) => {
+    if (!user?.uid) return;
+
+    try {
+      const newShoebox = await createShoebox(user.uid, data);
+      setShoeboxes([...shoeboxes, newShoebox]);
+      setCreateDialogOpen(false);
+    } catch (err) {
+      setError("Failed to create shoebox");
+      console.error(err);
+    }
+  };
+
+  const handleEditShoebox = async (data: {
+    name: string;
+    description: string;
+  }) => {
+    if (!selectedShoebox) return;
+
+    try {
+      await updateShoebox(selectedShoebox.id, data);
+      setShoeboxes(
+        shoeboxes.map((box) =>
+          box.id === selectedShoebox.id ? { ...box, ...data } : box
+        )
+      );
+      setEditDialogOpen(false);
+      setSelectedShoebox(null);
+    } catch (err) {
+      setError("Failed to update shoebox");
+      console.error(err);
+    }
+  };
+
+  const handleDeleteShoebox = async () => {
+    if (!selectedShoebox) return;
+
+    try {
+      await deleteShoebox(selectedShoebox.id);
+      setShoeboxes(shoeboxes.filter((box) => box.id !== selectedShoebox.id));
+      setDeleteDialogOpen(false);
+      setSelectedShoebox(null);
+    } catch (err) {
+      setError("Failed to delete shoebox");
+      console.error(err);
+    }
+  };
+
+  const handleViewShoebox = (shoebox: Shoebox) => {
+    navigate(`/shoebox/${shoebox.id}`);
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Typography>Loading...</Typography>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -54,11 +132,17 @@ const Dashboard: React.FC = () => {
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={handleCreateShoebox}
+          onClick={() => setCreateDialogOpen(true)}
         >
           Create New Shoebox
         </Button>
       </Box>
+
+      {error && (
+        <Paper sx={{ p: 2, mb: 3, bgcolor: "error.light" }}>
+          <Typography color="error">{error}</Typography>
+        </Paper>
+      )}
 
       {/* User Welcome Card */}
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -82,7 +166,7 @@ const Dashboard: React.FC = () => {
           gap: 3,
         }}
       >
-        {mockShoeboxes.map((shoebox) => (
+        {shoeboxes.map((shoebox) => (
           <Card key={shoebox.id}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -95,13 +179,78 @@ const Dashboard: React.FC = () => {
                 {shoebox.imageCount} images
               </Typography>
             </CardContent>
-            <CardActions>
-              <Button size="small">View</Button>
-              <Button size="small">Edit</Button>
+            <CardActions sx={{ justifyContent: "space-between" }}>
+              <Box>
+                <Button size="small" onClick={() => handleViewShoebox(shoebox)}>
+                  View
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setSelectedShoebox(shoebox);
+                    setEditDialogOpen(true);
+                  }}
+                >
+                  Edit
+                </Button>
+              </Box>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => {
+                  setSelectedShoebox(shoebox);
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <DeleteIcon />
+              </IconButton>
             </CardActions>
           </Card>
         ))}
       </Box>
+
+      {/* Create/Edit Dialog */}
+      <ShoeboxDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSave={handleCreateShoebox}
+        mode="create"
+      />
+
+      <ShoeboxDialog
+        open={editDialogOpen}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setSelectedShoebox(null);
+        }}
+        onSave={handleEditShoebox}
+        mode="edit"
+        initialData={selectedShoebox || undefined}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Delete Shoebox</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete "{selectedShoebox?.name}"? This
+            action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleDeleteShoebox}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

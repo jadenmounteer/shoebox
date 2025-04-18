@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
+import ShoeboxView from "./pages/ShoeboxView";
 import { AuthProvider } from "./contexts/AuthContext";
 
 const App: React.FC = () => {
@@ -38,6 +39,14 @@ const App: React.FC = () => {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/shoebox/:id"
+                element={
+                  <ProtectedRoute>
+                    <ShoeboxView />
                   </ProtectedRoute>
                 }
               />
