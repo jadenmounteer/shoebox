@@ -3,11 +3,11 @@ module.exports = {
   testEnvironment: "node",
   testMatch: ["**/tests/**/*.rules.test.[jt]s?(x)"],
   transform: {
-    "^.+\\.(ts|tsx)$": "ts-jest",
-  },
-  globals: {
-    "ts-jest": {
-      tsconfig: "tsconfig.json",
-    },
+    "^.+\\.(ts|tsx)$": [
+      "ts-jest",
+      {
+        tsconfig: "tsconfig.json",
+      },
+    ],
   },
 };
