@@ -3,6 +3,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   User,
   AuthError,
 } from "firebase/auth";
@@ -83,6 +84,28 @@ export async function logout(): Promise<void> {
   } catch (error: unknown) {
     console.error("Logout error:", error);
     throw new Error("Failed to sign out");
+  }
+}
+
+export async function resetPassword(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    console.log("Password reset email sent successfully");
+  } catch (error: unknown) {
+    console.error("Password reset error:", error);
+
+    if (error && typeof error === "object" && "code" in error) {
+      switch (error.code) {
+        case "auth/invalid-email":
+          throw new Error("Invalid email address");
+        case "auth/user-not-found":
+          throw new Error("No account found with this email");
+        default:
+          throw new Error(`Failed to send reset email: ${error.code}`);
+      }
+    }
+
+    throw new Error("Failed to send password reset email");
   }
 }
 

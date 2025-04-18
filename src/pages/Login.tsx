@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Stack } from "@mui/material";
 import AuthForm from "../components/AuthForm";
 import { login } from "../services/auth";
 
@@ -32,12 +32,19 @@ const Login: React.FC = () => {
   return (
     <Box sx={{ textAlign: "center" }}>
       <AuthForm type="login" onSubmit={handleLogin} error={error} />
-      <Typography sx={{ mt: 2 }}>
-        Don't have an account?{" "}
-        <Link to="/signup" style={{ textDecoration: "none" }}>
-          Sign up
-        </Link>
-      </Typography>
+      <Stack spacing={1} sx={{ mt: 2 }}>
+        <Typography>
+          Don't have an account?{" "}
+          <Link to="/signup" style={{ textDecoration: "none" }}>
+            Sign up
+          </Link>
+        </Typography>
+        <Typography>
+          <Link to="/forgot-password" style={{ textDecoration: "none" }}>
+            Forgot your password?
+          </Link>
+        </Typography>
+      </Stack>
     </Box>
   );
 };

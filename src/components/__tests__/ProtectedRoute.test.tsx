@@ -1,7 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { BrowserRouter, useLocation } from "react-router-dom";
-import { AuthProvider } from "../../contexts/AuthContext";
 import ProtectedRoute from "../ProtectedRoute";
 import { useAuth } from "../../contexts/AuthContext";
 
