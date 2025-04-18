@@ -8,6 +8,8 @@ import {
   Paper,
   Grid,
   IconButton,
+  ImageList,
+  ImageListItem,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -15,12 +17,20 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
 import { Shoebox, getUserShoeboxes } from "../services/shoeboxService";
+import ImageUpload from "../components/ImageUpload";
+
+interface Image {
+  id: string;
+  url: string;
+  uploadedAt: Date;
+}
 
 const ShoeboxView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [shoebox, setShoebox] = useState<Shoebox | null>(null);
+  const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +52,7 @@ const ShoeboxView: React.FC = () => {
       }
 
       setShoebox(foundShoebox);
+      // TODO: Load images from Firestore
     } catch (err) {
       setError("Failed to load shoebox");
       console.error(err);
@@ -50,9 +61,14 @@ const ShoeboxView: React.FC = () => {
     }
   };
 
-  const handleAddPhotos = () => {
-    // TODO: Implement photo upload functionality
-    console.log("Add photos");
+  const handleImageUpload = (imageUrl: string) => {
+    const newImage: Image = {
+      id: Date.now().toString(),
+      url: imageUrl,
+      uploadedAt: new Date(),
+    };
+    setImages((prev) => [...prev, newImage]);
+    // TODO: Save image reference to Firestore
   };
 
   if (loading) {
@@ -96,27 +112,34 @@ const ShoeboxView: React.FC = () => {
           }}
         >
           <Typography variant="subtitle1" color="text.secondary">
-            {shoebox.imageCount} images
+            {images.length} images
           </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={handleAddPhotos}
-          >
-            Add Photos
-          </Button>
+          <ImageUpload
+            shoeboxId={shoebox.id}
+            onUploadComplete={handleImageUpload}
+          />
         </Box>
       </Paper>
 
-      <Box sx={{ display: "grid", gap: 2 }}>
-        {/* TODO: Add photo grid here */}
+      {images.length > 0 ? (
+        <ImageList cols={3} gap={8}>
+          {images.map((image) => (
+            <ImageListItem key={image.id}>
+              <img
+                src={image.url}
+                alt={`Uploaded at ${image.uploadedAt.toLocaleString()}`}
+                loading="lazy"
+              />
+            </ImageListItem>
+          ))}
+        </ImageList>
+      ) : (
         <Paper sx={{ p: 3, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
-            No photos yet. Click "Add Photos" to get started!
+            No photos yet. Click "Upload Image" to get started!
           </Typography>
         </Paper>
-      </Box>
+      )}
     </Container>
   );
 };
