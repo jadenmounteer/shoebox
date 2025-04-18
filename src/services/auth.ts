@@ -67,10 +67,17 @@ export const signUp = async ({
     } catch (firestoreError) {
       // If any Firestore operation fails, clean up by deleting the auth user
       await userCredential.user.delete();
-      throw firestoreError;
+      if (firestoreError instanceof Error) {
+        throw firestoreError;
+      }
+      throw new Error("Failed to complete signup");
     }
   } catch (error: unknown) {
     console.error("Sign up error:", error);
+
+    if (error instanceof Error) {
+      throw error;
+    }
 
     if (error && typeof error === "object" && "code" in error) {
       switch (error.code) {
@@ -81,9 +88,6 @@ export const signUp = async ({
         case "auth/weak-password":
           throw new Error("Password is too weak");
         default:
-          if (error instanceof Error) {
-            throw error;
-          }
           throw new Error("Failed to sign up");
       }
     }
