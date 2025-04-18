@@ -12,6 +12,8 @@ import {
   deleteDoc,
   doc,
   Timestamp,
+  increment,
+  updateDoc,
 } from "firebase/firestore";
 import { storage, db } from "../config/firebase";
 
@@ -97,6 +99,12 @@ export const uploadImage = async ({
     }
   );
 
+  // Increment the imageCount in the shoebox document
+  const shoeboxRef = doc(db, "shoeboxes", shoeboxId);
+  await updateDoc(shoeboxRef, {
+    imageCount: increment(1),
+  });
+
   return {
     id: imageRef.id,
     url: downloadURL,
@@ -126,4 +134,10 @@ export const deleteImage = async (
 
   // Delete from Firestore
   await deleteDoc(doc(db, `shoeboxes/${shoeboxId}/images/${imageId}`));
+
+  // Decrement the imageCount in the shoebox document
+  const shoeboxRef = doc(db, "shoeboxes", shoeboxId);
+  await updateDoc(shoeboxRef, {
+    imageCount: increment(-1),
+  });
 };
