@@ -4,48 +4,98 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  User,
+  User as FirebaseUser,
   AuthError,
 } from "firebase/auth";
-import { auth } from "./firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 
-export async function signUp(email: string, password: string): Promise<User> {
+interface SignUpData {
+  email: string;
+  password: string;
+  username: string;
+}
+
+interface UserData {
+  username: string;
+  email: string;
+  createdAt: Date;
+}
+
+export const signUp = async ({
+  email,
+  password,
+  username,
+}: SignUpData): Promise<FirebaseUser> => {
   try {
     console.log("Attempting to sign up with email:", email);
+
+    // First create the user with email and password
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
-    console.log("Sign up successful:", userCredential);
-    return userCredential.user;
+    console.log("Firebase Auth user created:", userCredential);
+
+    try {
+      // Now that we're authenticated, check if username is already taken
+      const usersRef = doc(db, "usernames", username.toLowerCase());
+      const usernameDoc = await getDoc(usersRef);
+
+      if (usernameDoc.exists()) {
+        // If username is taken, delete the auth user and throw error
+        await userCredential.user.delete();
+        throw new Error("Username is already taken");
+      }
+
+      // Store additional user data in Firestore
+      const userRef = doc(db, "users", userCredential.user.uid);
+      const userData: UserData = {
+        username,
+        email,
+        createdAt: new Date(),
+      };
+      await setDoc(userRef, userData);
+
+      // Reserve the username
+      await setDoc(usersRef, {
+        uid: userCredential.user.uid,
+      });
+
+      return userCredential.user;
+    } catch (firestoreError) {
+      // If any Firestore operation fails, clean up by deleting the auth user
+      await userCredential.user.delete();
+      throw firestoreError;
+    }
   } catch (error: unknown) {
-    // Log the full error object for debugging
     console.error("Sign up error:", error);
 
     if (error && typeof error === "object" && "code" in error) {
-      // Handle specific Firebase error codes
       switch (error.code) {
         case "auth/email-already-in-use":
-          throw new Error("This email is already registered");
+          throw new Error("Email is already registered");
         case "auth/invalid-email":
           throw new Error("Invalid email address");
-        case "auth/operation-not-allowed":
-          throw new Error(
-            "Email/password accounts are not enabled. Please contact support."
-          );
         case "auth/weak-password":
           throw new Error("Password is too weak");
         default:
-          throw new Error(`Authentication error: ${error.code}`);
+          if (error instanceof Error) {
+            throw error;
+          }
+          throw new Error("Failed to sign up");
       }
     }
 
-    throw new Error("Failed to create account");
+    throw new Error("Failed to sign up");
   }
-}
+};
 
-export async function login(email: string, password: string): Promise<User> {
+export const login = async (
+  email: string,
+  password: string
+): Promise<FirebaseUser> => {
   try {
     console.log("Attempting to log in with email:", email);
     const userCredential = await signInWithEmailAndPassword(
@@ -60,24 +110,23 @@ export async function login(email: string, password: string): Promise<User> {
 
     if (error && typeof error === "object" && "code" in error) {
       switch (error.code) {
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+          throw new Error("Invalid email or password");
         case "auth/invalid-email":
           throw new Error("Invalid email address");
         case "auth/user-disabled":
-          throw new Error("This account has been disabled");
-        case "auth/user-not-found":
-          throw new Error("No account found with this email");
-        case "auth/wrong-password":
-          throw new Error("Incorrect password");
+          throw new Error("Account has been disabled");
         default:
-          throw new Error(`Authentication error: ${error.code}`);
+          throw new Error("Failed to log in");
       }
     }
 
-    throw new Error("Failed to sign in");
+    throw new Error("Failed to log in");
   }
-}
+};
 
-export async function logout(): Promise<void> {
+export const logout = async (): Promise<void> => {
   try {
     await signOut(auth);
     console.log("Logout successful");
@@ -85,7 +134,23 @@ export async function logout(): Promise<void> {
     console.error("Logout error:", error);
     throw new Error("Failed to sign out");
   }
-}
+};
+
+export const getUserData = async (uid: string): Promise<UserData | null> => {
+  try {
+    const userRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      return userDoc.data() as UserData;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    return null;
+  }
+};
 
 export async function resetPassword(email: string): Promise<void> {
   try {
@@ -109,6 +174,8 @@ export async function resetPassword(email: string): Promise<void> {
   }
 }
 
-export function onAuthStateChange(callback: (user: User | null) => void) {
+export function onAuthStateChange(
+  callback: (user: FirebaseUser | null) => void
+) {
   return onAuthStateChanged(auth, callback);
 }
