@@ -6,7 +6,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Box } from "@mui/material";
-import Layout from "./components/Layout";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";

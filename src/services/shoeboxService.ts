@@ -9,8 +9,7 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { ref, deleteObject } from "firebase/storage";
-import { db, storage } from "../config/firebase";
+import { db } from "../config/firebase";
 import { getShoeboxImages, deleteImage } from "./imageService";
 
 export interface Shoebox {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
@@ -19,7 +19,8 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
-import { Shoebox, getUserShoeboxes } from "../services/shoeboxService";
+import { getUserShoeboxes } from "../services/shoeboxService";
+import { Shoebox } from "../services/shoeboxService";
 import { Image, getShoeboxImages, deleteImage } from "../services/imageService";
 import ImageUpload from "../components/ImageUpload";
 import ImageViewer from "../components/ImageViewer";
@@ -34,12 +35,8 @@ const ShoeboxView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadShoebox();
-  }, [id, user]);
-
-  const loadShoebox = async () => {
-    if (!user?.uid || !id) return;
+  const loadShoebox = useCallback(async () => {
+    if (!id || !user?.uid) return;
 
     try {
       setLoading(true);
@@ -60,7 +57,11 @@ const ShoeboxView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user?.uid]);
+
+  useEffect(() => {
+    loadShoebox();
+  }, [loadShoebox]);
 
   const handleImageUpload = (image: Image) => {
     setImages((prev) => [...prev, image]);

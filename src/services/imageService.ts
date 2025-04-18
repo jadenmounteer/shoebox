@@ -1,5 +1,4 @@
 import {
-  getStorage,
   ref,
   uploadBytes,
   getDownloadURL,
@@ -8,12 +7,14 @@ import {
 import {
   collection,
   addDoc,
-  getDocs,
   deleteDoc,
   doc,
-  Timestamp,
-  increment,
+  query,
+  where,
+  getDocs,
   updateDoc,
+  increment,
+  Timestamp,
 } from "firebase/firestore";
 import { storage, db } from "../config/firebase";
 

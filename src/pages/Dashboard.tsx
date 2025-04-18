@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Container,
@@ -42,12 +42,7 @@ const Dashboard: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedShoebox, setSelectedShoebox] = useState<Shoebox | null>(null);
 
-  useEffect(() => {
-    loadShoeboxes();
-    loadUserData();
-  }, [user]);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     if (!user?.uid) return;
 
     try {
@@ -58,9 +53,9 @@ const Dashboard: React.FC = () => {
     } catch (err) {
       console.error("Failed to load user data:", err);
     }
-  };
+  }, [user?.uid]);
 
-  const loadShoeboxes = async () => {
+  const loadShoeboxes = useCallback(async () => {
     if (!user?.uid) return;
 
     try {
@@ -73,7 +68,12 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    loadShoeboxes();
+    loadUserData();
+  }, [user, loadShoeboxes, loadUserData]);
 
   const handleCreateShoebox = async (data: {
     name: string;
