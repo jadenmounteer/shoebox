@@ -9,8 +9,6 @@ import {
   addDoc,
   deleteDoc,
   doc,
-  query,
-  where,
   getDocs,
   updateDoc,
   increment,

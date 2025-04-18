@@ -4,9 +4,7 @@ import {
   Container,
   Typography,
   Box,
-  Button,
   Paper,
-  Grid,
   IconButton,
   ImageList,
   ImageListItem,
@@ -15,7 +13,6 @@ import {
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
-  Add as AddIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../contexts/AuthContext";
