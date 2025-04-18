@@ -8,17 +8,20 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
+import ShareButton from "./ShareButton";
 
 interface ImageViewerProps {
   open: boolean;
   onClose: () => void;
   imageUrl: string;
+  title?: string;
 }
 
 const ImageViewer: React.FC<ImageViewerProps> = ({
   open,
   onClose,
   imageUrl,
+  title = "Shared Image",
 }) => {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
@@ -27,7 +30,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xl"
+      maxWidth="lg"
       fullScreen={fullScreen}
       PaperProps={{
         sx: {
@@ -36,43 +39,49 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
         },
       }}
     >
-      <IconButton
-        onClick={onClose}
+      <Box
         sx={{
           position: "absolute",
-          right: 8,
           top: 8,
-          color: "white",
-          bgcolor: "rgba(0, 0, 0, 0.5)",
-          "&:hover": {
-            bgcolor: "rgba(0, 0, 0, 0.7)",
-          },
+          right: 8,
           zIndex: 1,
+          display: "flex",
+          gap: 1,
+          bgcolor: "rgba(0, 0, 0, 0.6)",
+          borderRadius: 1,
+          p: 0.5,
+          "& .MuiIconButton-root": {
+            color: "white",
+            "&:hover": {
+              bgcolor: "rgba(255, 255, 255, 0.1)",
+            },
+          },
         }}
       >
-        <CloseIcon />
-      </IconButton>
+        <ShareButton
+          url={imageUrl}
+          title={title}
+          description="Check out this image from my Shoebox!"
+        />
+        <IconButton
+          edge="end"
+          onClick={onClose}
+          aria-label="close"
+          size="small"
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
       <DialogContent sx={{ p: 0, overflow: "hidden" }}>
-        <Box
-          sx={{
+        <img
+          src={imageUrl}
+          alt={title}
+          style={{
             width: "100%",
             height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor: "black",
+            objectFit: "contain",
           }}
-        >
-          <img
-            src={imageUrl}
-            alt="Full screen view"
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100vh",
-              objectFit: "contain",
-            }}
-          />
-        </Box>
+        />
       </DialogContent>
     </Dialog>
   );
